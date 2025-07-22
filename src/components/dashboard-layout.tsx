@@ -36,7 +36,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full bg-background">
-        <Sidebar>
+        <Sidebar collapsible="icon">
           <SidebarHeader>
             <div className="flex items-center gap-3 px-3 py-4">
               <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg">
@@ -112,7 +112,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="flex-1 flex flex-col min-w-0">
           {/* Header with Claymorphic Styling */}
           <header className="flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6 shadow-sm w-full">
-            <SidebarTrigger className="md:hidden" />
+            <SidebarTrigger />
             <div className="flex-1 min-w-0">
               <div className="relative max-w-md">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
