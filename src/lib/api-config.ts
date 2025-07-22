@@ -33,4 +33,23 @@ export async function apiCall(endpoint: string, options: RequestInit = {}) {
   }
   
   return response.json();
-} 
+}
+
+// Fallback to localhost for development
+export const LOCAL_API_BASE_URL = 'http://localhost:3001';
+
+export const LOCAL_API_ENDPOINTS = {
+  // Authentication
+  register: `${LOCAL_API_BASE_URL}/api/register`,
+  login: `${LOCAL_API_BASE_URL}/api/login`,
+  logout: `${LOCAL_API_BASE_URL}/api/logout`,
+  me: `${LOCAL_API_BASE_URL}/api/me`,
+  
+  // Customers
+  customers: `${LOCAL_API_BASE_URL}/api/customers`,
+  customer: (id: string) => `${LOCAL_API_BASE_URL}/api/customers/${id}`,
+  
+  // Deals
+  deals: `${LOCAL_API_BASE_URL}/api/deals`,
+  deal: (id: string) => `${LOCAL_API_BASE_URL}/api/deals/${id}`,
+}; 

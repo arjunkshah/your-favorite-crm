@@ -32,5 +32,9 @@
       "source": "/api/(.*)",
       "destination": "/api/$1"
     }
-  ]
+  ],
+  "public": true,
+  "github": {
+    "silent": true
+  }
 } 
