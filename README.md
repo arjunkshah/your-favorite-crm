@@ -19,6 +19,7 @@ A modern, responsive CRM dashboard built with Next.js, TypeScript, Tailwind CSS,
 - **Report Generation**: Custom reports with data visualization
 - **Settings Management**: User preferences and account configuration
 - **Dark Mode**: Toggle between light and dark themes with system preference detection
+- **User Accounts**: Register, log in, and manage data linked to your profile
 
 ## 🛠️ Tech Stack
 
@@ -28,6 +29,7 @@ A modern, responsive CRM dashboard built with Next.js, TypeScript, Tailwind CSS,
 - **UI Components**: shadcn/ui
 - **Icons**: Lucide React
 - **State Management**: React hooks
+- **Database**: Lightweight JSON file storage for persistent data
 
 ## 📦 Installation
 
@@ -160,7 +162,7 @@ The dashboard is fully responsive with:
 - [ ] Deal pipeline management
 - [ ] Email integration
 - [ ] Calendar integration
-- [ ] User authentication
+- [x] User authentication
 - [ ] Dark mode support
 - [ ] Real-time updates
 - [ ] API integration
