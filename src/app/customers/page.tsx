@@ -67,59 +67,18 @@ export default function CustomersPage() {
     status: "active" as 'active' | 'pending' | 'inactive'
   })
 
-  // Initialize with sample data
+  // Load customers from the backend
   useEffect(() => {
-    const sampleCustomers: Customer[] = [
-      {
-        id: "1",
-        name: "Sarah Johnson",
-        email: "sarah.johnson@techcorp.com",
-        phone: "+1 (555) 123-4567",
-        company: "TechCorp Inc.",
-        website: "techcorp.com",
-        status: "active",
-        value: 12000,
-        lastContact: "2024-01-15",
-        avatar: "/avatars/01.png"
-      },
-      {
-        id: "2",
-        name: "Michael Chen",
-        email: "michael.chen@globalsolutions.com",
-        phone: "+1 (555) 234-5678",
-        company: "Global Solutions",
-        website: "globalsolutions.com",
-        status: "pending",
-        value: 8500,
-        lastContact: "2024-01-10",
-        avatar: "/avatars/02.png"
-      },
-      {
-        id: "3",
-        name: "Emily Davis",
-        email: "emily.davis@innovationlabs.com",
-        phone: "+1 (555) 345-6789",
-        company: "Innovation Labs",
-        website: "innovationlabs.com",
-        status: "active",
-        value: 15200,
-        lastContact: "2024-01-12",
-        avatar: "/avatars/03.png"
-      },
-      {
-        id: "4",
-        name: "David Wilson",
-        email: "david.wilson@futuresystems.com",
-        phone: "+1 (555) 456-7890",
-        company: "Future Systems",
-        website: "futuresystems.com",
-        status: "inactive",
-        value: 6800,
-        lastContact: "2024-01-05",
-        avatar: "/avatars/04.png"
+    async function load() {
+      const res = await fetch("/api/customers", {
+        credentials: "include"
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setCustomers(data)
       }
-    ]
-    setCustomers(sampleCustomers)
+    }
+    load()
   }, [])
 
   const filteredCustomers = customers.filter(customer => {
@@ -130,33 +89,51 @@ export default function CustomersPage() {
     return matchesSearch && matchesStatus
   })
 
-  const addCustomer = () => {
-    const customer: Customer = {
-      id: Date.now().toString(),
-      ...newCustomer,
-      value: 0,
-      lastContact: new Date().toISOString().split('T')[0]
-    }
-    setCustomers([...customers, customer])
-    setNewCustomer({
-      name: "",
-      email: "",
-      phone: "",
-      company: "",
-      website: "",
-      status: "active"
+  const addCustomer = async () => {
+    const res = await fetch("/api/customers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(newCustomer)
     })
-    setIsAddDialogOpen(false)
+    if (res.ok) {
+      const customer: Customer = await res.json()
+      setCustomers([...customers, customer])
+      setNewCustomer({
+        name: "",
+        email: "",
+        phone: "",
+        company: "",
+        website: "",
+        status: "active"
+      })
+      setIsAddDialogOpen(false)
+    }
   }
 
-  const updateCustomer = () => {
+  const updateCustomer = async () => {
     if (!editingCustomer) return
-    setCustomers(customers.map(c => c.id === editingCustomer.id ? editingCustomer : c))
-    setEditingCustomer(null)
+    const res = await fetch(`/api/customers/${editingCustomer.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(editingCustomer)
+    })
+    if (res.ok) {
+      const updated: Customer = await res.json()
+      setCustomers(customers.map(c => c.id === updated.id ? updated : c))
+      setEditingCustomer(null)
+    }
   }
 
-  const deleteCustomer = (id: string) => {
-    setCustomers(customers.filter(c => c.id !== id))
+  const deleteCustomer = async (id: string) => {
+    const res = await fetch(`/api/customers/${id}`, {
+      method: "DELETE",
+      credentials: "include"
+    })
+    if (res.ok) {
+      setCustomers(customers.filter(c => c.id !== id))
+    }
   }
 
   const totalValue = customers.reduce((sum, c) => sum + c.value, 0)

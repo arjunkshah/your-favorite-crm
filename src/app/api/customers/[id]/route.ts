@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getUserIdFromSession, getCustomers, saveCustomers } from '@/lib/db'
 
-export async function PUT(req: NextRequest, context: any) {
-  const { params } = context as { params: { id: string } }
+export async function PUT(req: NextRequest, context: { params: { id: string } }) {
+  const { params } = context
   const token = req.cookies.get('session')?.value
   const userId = getUserIdFromSession(token)
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -15,8 +15,11 @@ export async function PUT(req: NextRequest, context: any) {
   return NextResponse.json(customers[index])
 }
 
-export async function DELETE(req: NextRequest, context: any) {
-  const { params } = context as { params: { id: string } }
+export async function DELETE(
+  req: NextRequest,
+  context: { params: { id: string } }
+) {
+  const { params } = context
   const token = req.cookies.get('session')?.value
   const userId = getUserIdFromSession(token)
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
