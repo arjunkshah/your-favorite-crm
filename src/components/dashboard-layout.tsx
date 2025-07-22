@@ -28,6 +28,7 @@ import {
   Mail,
   FileText,
   TrendingUp,
+  Target,
   LogOut
 } from "lucide-react"
 
@@ -83,6 +84,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       title: "Customers",
       url: "/customers",
       icon: Users,
+    },
+    {
+      title: "Deals",
+      url: "/deals",
+      icon: Target,
     },
     {
       title: "Analytics",

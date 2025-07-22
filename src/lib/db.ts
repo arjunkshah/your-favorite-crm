@@ -19,14 +19,33 @@ export interface Customer {
   avatar?: string
 }
 
+export interface Deal {
+  id: string
+  title: string
+  description: string
+  value: number
+  status: 'prospecting' | 'qualification' | 'proposal' | 'negotiation' | 'closed-won' | 'closed-lost'
+  priority: 'low' | 'medium' | 'high'
+  customerId: string
+  customerName: string
+  customerCompany: string
+  expectedCloseDate: string
+  createdAt: string
+  updatedAt: string
+  assignedTo: string
+  source: string
+  tags: string[]
+}
+
 interface DB {
   users: User[]
   sessions: Record<string, string>
   customers: Record<string, Customer[]>
+  deals: Record<string, Deal[]>
 }
 
 // In-memory database for serverless environment
-const db: DB = { users: [], sessions: {}, customers: {} }
+const db: DB = { users: [], sessions: {}, customers: {}, deals: {} }
 
 // Initialize with some sample data for demo purposes
 if (db.users.length === 0) {
@@ -118,4 +137,12 @@ export function getCustomers(userId: string): Customer[] {
 
 export function saveCustomers(userId: string, customers: Customer[]) {
   db.customers[userId] = customers
+}
+
+export function getDeals(userId: string): Deal[] {
+  return db.deals[userId] ?? []
+}
+
+export function saveDeals(userId: string, deals: Deal[]) {
+  db.deals[userId] = deals
 }

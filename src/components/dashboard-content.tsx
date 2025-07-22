@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -36,6 +37,7 @@ interface Customer {
 }
 
 export function DashboardContent() {
+  const router = useRouter()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -259,19 +261,35 @@ export function DashboardContent() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Button className="h-auto p-4 flex-col space-y-2" variant="outline">
+            <Button 
+              className="h-auto p-4 flex-col space-y-2" 
+              variant="outline"
+              onClick={() => router.push('/customers')}
+            >
               <Users className="h-6 w-6" />
               <span>Add Customer</span>
             </Button>
-            <Button className="h-auto p-4 flex-col space-y-2" variant="outline">
+            <Button 
+              className="h-auto p-4 flex-col space-y-2" 
+              variant="outline"
+              onClick={() => router.push('/deals')}
+            >
               <DollarSign className="h-6 w-6" />
               <span>Create Deal</span>
             </Button>
-            <Button className="h-auto p-4 flex-col space-y-2" variant="outline">
+            <Button 
+              className="h-auto p-4 flex-col space-y-2" 
+              variant="outline"
+              onClick={() => router.push('/calendar')}
+            >
               <Calendar className="h-6 w-6" />
               <span>Schedule Meeting</span>
             </Button>
-            <Button className="h-auto p-4 flex-col space-y-2" variant="outline">
+            <Button 
+              className="h-auto p-4 flex-col space-y-2" 
+              variant="outline"
+              onClick={() => router.push('/messages')}
+            >
               <Mail className="h-6 w-6" />
               <span>Send Email</span>
             </Button>

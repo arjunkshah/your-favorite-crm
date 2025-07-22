@@ -10,17 +10,11 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { 
-  Settings, 
   User, 
   Bell, 
   Shield, 
   Palette,
-  Globe,
   Database,
-  Key,
-  Mail,
-  Phone,
-  Building,
   Save,
   Edit,
   Trash2,
@@ -28,15 +22,17 @@ import {
   Upload
 } from "lucide-react"
 
+interface UserProfile {
+  id: string
+  email: string
+  name?: string
+  phone?: string
+  company?: string
+  role?: string
+}
+
 interface UserSettings {
-  profile: {
-    name: string
-    email: string
-    phone: string
-    company: string
-    role: string
-    avatar?: string
-  }
+  profile: UserProfile
   preferences: {
     theme: 'light' | 'dark' | 'system'
     language: string
@@ -60,56 +56,83 @@ interface UserSettings {
 }
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<UserSettings>({
-    profile: {
-      name: "John Doe",
-      email: "john.doe@company.com",
-      phone: "+1 (555) 123-4567",
-      company: "TechCorp Inc.",
-      role: "Sales Manager",
-      avatar: "/avatars/01.png"
-    },
-    preferences: {
-      theme: "system",
-      language: "en",
-      timezone: "America/New_York",
-      dateFormat: "MM/DD/YYYY",
-      notifications: {
-        email: true,
-        push: true,
-        sms: false
-      }
-    },
-    security: {
-      twoFactorEnabled: false,
-      lastPasswordChange: "2024-01-15T10:00:00",
-      loginHistory: [
-        {
-          date: "2024-01-20T14:30:00",
-          location: "New York, NY",
-          device: "MacBook Pro"
-        },
-        {
-          date: "2024-01-19T09:15:00",
-          location: "San Francisco, CA",
-          device: "iPhone 15"
-        }
-      ]
-    }
-  })
-
+  const [settings, setSettings] = useState<UserSettings | null>(null)
+  const [loading, setLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
-  const [editedProfile, setEditedProfile] = useState(settings.profile)
+  const [editedProfile, setEditedProfile] = useState<UserProfile | null>(null)
 
-  const saveSettings = () => {
-    setSettings({
-      ...settings,
-      profile: editedProfile
-    })
-    setIsEditing(false)
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await fetch('/api/me')
+        if (response.ok) {
+          const userData = await response.json()
+          
+          const userSettings: UserSettings = {
+            profile: {
+              id: userData.id,
+              email: userData.email,
+              name: userData.name || userData.email.split('@')[0],
+              phone: userData.phone || '',
+              company: userData.company || '',
+              role: userData.role || 'User'
+            },
+            preferences: {
+              theme: "system",
+              language: "en",
+              timezone: "America/New_York",
+              dateFormat: "MM/DD/YYYY",
+              notifications: {
+                email: true,
+                push: true,
+                sms: false
+              }
+            },
+            security: {
+              twoFactorEnabled: false,
+              lastPasswordChange: new Date().toISOString(),
+              loginHistory: [
+                {
+                  date: new Date().toISOString(),
+                  location: "Current Session",
+                  device: "Web Browser"
+                }
+              ]
+            }
+          }
+          
+          setSettings(userSettings)
+          setEditedProfile(userSettings.profile)
+        }
+      } catch (error) {
+        console.error('Failed to fetch user data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchUserData()
+  }, [])
+
+  const saveSettings = async () => {
+    if (!editedProfile || !settings) return
+    
+    try {
+      // In a real app, you'd save this to an API
+      // For now, just update local state
+      setSettings({
+        ...settings,
+        profile: editedProfile
+      })
+      setIsEditing(false)
+    } catch (error) {
+      console.error('Failed to save settings:', error)
+    }
   }
 
-  const updateNotificationSetting = (type: keyof typeof settings.preferences.notifications, value: boolean) => {
+  const updateNotificationSetting = (type: 'email' | 'push' | 'sms', value: boolean) => {
+    if (!settings) return
+    
     setSettings({
       ...settings,
       preferences: {
@@ -123,6 +146,8 @@ export default function SettingsPage() {
   }
 
   const toggleTwoFactor = () => {
+    if (!settings) return
+    
     setSettings({
       ...settings,
       security: {
@@ -130,6 +155,22 @@ export default function SettingsPage() {
         twoFactorEnabled: !settings.security.twoFactorEnabled
       }
     })
+  }
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
+  if (!settings) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-muted-foreground">Failed to load user settings</p>
+      </div>
+    )
   }
 
   return (
@@ -160,8 +201,10 @@ export default function SettingsPage() {
         <CardContent>
           <div className="flex items-start space-x-6">
             <Avatar className="h-20 w-20">
-              <AvatarImage src={settings.profile.avatar} alt={settings.profile.name} />
-              <AvatarFallback className="text-lg">{settings.profile.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+              <AvatarImage src="" alt={settings.profile.name || settings.profile.email} />
+              <AvatarFallback className="text-lg">
+                {settings.profile.name ? settings.profile.name.split(' ').map(n => n[0]).join('') : settings.profile.email.substring(0, 2).toUpperCase()}
+              </AvatarFallback>
             </Avatar>
             <div className="flex-1 space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
@@ -169,8 +212,8 @@ export default function SettingsPage() {
                   <Label htmlFor="name">Full Name</Label>
                   <Input
                     id="name"
-                    value={isEditing ? editedProfile.name : settings.profile.name}
-                    onChange={(e) => isEditing && setEditedProfile({...editedProfile, name: e.target.value})}
+                    value={isEditing ? (editedProfile?.name || '') : (settings.profile.name || '')}
+                    onChange={(e) => isEditing && editedProfile && setEditedProfile({...editedProfile, name: e.target.value})}
                     disabled={!isEditing}
                   />
                 </div>
@@ -179,36 +222,38 @@ export default function SettingsPage() {
                   <Input
                     id="email"
                     type="email"
-                    value={isEditing ? editedProfile.email : settings.profile.email}
-                    onChange={(e) => isEditing && setEditedProfile({...editedProfile, email: e.target.value})}
-                    disabled={!isEditing}
+                    value={settings.profile.email}
+                    disabled={true} // Email usually shouldn't be editable
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
                   <Input
                     id="phone"
-                    value={isEditing ? editedProfile.phone : settings.profile.phone}
-                    onChange={(e) => isEditing && setEditedProfile({...editedProfile, phone: e.target.value})}
+                    value={isEditing ? (editedProfile?.phone || '') : (settings.profile.phone || '')}
+                    onChange={(e) => isEditing && editedProfile && setEditedProfile({...editedProfile, phone: e.target.value})}
                     disabled={!isEditing}
+                    placeholder="Enter your phone number"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="company">Company</Label>
                   <Input
                     id="company"
-                    value={isEditing ? editedProfile.company : settings.profile.company}
-                    onChange={(e) => isEditing && setEditedProfile({...editedProfile, company: e.target.value})}
+                    value={isEditing ? (editedProfile?.company || '') : (settings.profile.company || '')}
+                    onChange={(e) => isEditing && editedProfile && setEditedProfile({...editedProfile, company: e.target.value})}
                     disabled={!isEditing}
+                    placeholder="Enter your company"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="role">Role</Label>
                   <Input
                     id="role"
-                    value={isEditing ? editedProfile.role : settings.profile.role}
-                    onChange={(e) => isEditing && setEditedProfile({...editedProfile, role: e.target.value})}
+                    value={isEditing ? (editedProfile?.role || '') : (settings.profile.role || '')}
+                    onChange={(e) => isEditing && editedProfile && setEditedProfile({...editedProfile, role: e.target.value})}
                     disabled={!isEditing}
+                    placeholder="Enter your role"
                   />
                 </div>
               </div>
@@ -243,13 +288,13 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="theme">Theme</Label>
-                             <Select 
-                 value={settings.preferences.theme} 
-                 onValueChange={(value: 'light' | 'dark' | 'system') => setSettings({
-                   ...settings,
-                   preferences: { ...settings.preferences, theme: value }
-                 })}
-               >
+              <Select 
+                value={settings.preferences.theme} 
+                onValueChange={(value: 'light' | 'dark' | 'system') => setSettings({
+                  ...settings,
+                  preferences: { ...settings.preferences, theme: value }
+                })}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
