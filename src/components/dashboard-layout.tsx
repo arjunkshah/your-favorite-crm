@@ -14,6 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThemeToggle } from "@/components/theme-toggle"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { 
   Users, 
   BarChart3, 
@@ -25,7 +26,8 @@ import {
   Calendar,
   Mail,
   FileText,
-  TrendingUp
+  TrendingUp,
+  LogOut
 } from "lucide-react"
 
 interface DashboardLayoutProps {
@@ -33,6 +35,18 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/logout', { method: 'POST' })
+      router.push('/login')
+      router.refresh()
+    } catch (error) {
+      console.error('Logout failed:', error)
+    }
+  }
+
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full bg-background">
@@ -132,6 +146,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Bell className="h-4 w-4" />
               </Button>
               <ThemeToggle />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleLogout}
+                className="rounded-xl shadow-sm hover:shadow-md transition-shadow"
+                title="Logout"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
               <Avatar className="shadow-sm hover:shadow-md transition-shadow">
                 <AvatarImage src="/avatars/01.png" alt="User" />
                 <AvatarFallback className="bg-primary/10 text-primary">JD</AvatarFallback>

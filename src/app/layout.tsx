@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import { DashboardLayout } from "@/components/dashboard-layout";
+import { AuthProvider } from "@/components/auth-provider";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -25,7 +25,7 @@ export default function RootLayout({
         className={`${plusJakartaSans.variable} antialiased`}
       >
         <ThemeProvider defaultTheme="system">
-          <DashboardLayout>{children}</DashboardLayout>
+          <AuthProvider>{children}</AuthProvider>
         </ThemeProvider>
       </body>
     </html>
