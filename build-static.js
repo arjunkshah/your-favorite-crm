@@ -13,6 +13,13 @@ if (fs.existsSync(apiDir)) {
   fs.rmSync(apiDir, { recursive: true, force: true });
 }
 
+// Remove the API routes from the build output if they exist
+const outApiDir = path.join(__dirname, 'out', 'api');
+if (fs.existsSync(outApiDir)) {
+  console.log('📁 Removing API routes from build output...');
+  fs.rmSync(outApiDir, { recursive: true, force: true });
+}
+
 // Build the project
 console.log('🏗️ Running Next.js build...');
 try {
