@@ -1,11 +1,11 @@
 "use client"
 
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   Users, 
   DollarSign, 
@@ -22,7 +22,57 @@ import {
   Activity
 } from "lucide-react"
 
+interface Customer {
+  id: string
+  name: string
+  email: string
+  phone: string
+  company: string
+  website: string
+  status: 'active' | 'pending' | 'inactive'
+  value: number
+  lastContact: string
+  avatar?: string
+}
+
 export function DashboardContent() {
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const response = await fetch('/api/customers')
+        if (response.ok) {
+          const data = await response.json()
+          setCustomers(data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch customers:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCustomers()
+  }, [])
+
+  // Calculate dashboard stats from real data
+  const totalRevenue = customers.reduce((sum, customer) => sum + customer.value, 0)
+  const activeCustomers = customers.filter(c => c.status === 'active').length
+  const pendingCustomers = customers.filter(c => c.status === 'pending').length
+  const inactiveCustomers = customers.filter(c => c.status === 'inactive').length
+
+  const recentCustomers = customers.slice(0, 4) // Show last 4 customers
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Header Stats with Claymorphic Styling */}
@@ -35,67 +85,63 @@ export function DashboardContent() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$45,231.89</div>
+            <div className="text-2xl font-bold">${totalRevenue.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600 flex items-center">
                 <ArrowUpRight className="h-3 w-3 mr-1" />
-                +20.1%
+                +{activeCustomers} active customers
               </span>
-              from last month
             </p>
           </CardContent>
         </Card>
         <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Customers</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
             <div className="p-2 rounded-xl bg-primary/10 shadow-sm">
               <Users className="h-4 w-4 text-primary" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+2,350</div>
+            <div className="text-2xl font-bold">{customers.length}</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600 flex items-center">
                 <ArrowUpRight className="h-3 w-3 mr-1" />
-                +180.1%
+                +{activeCustomers} active
               </span>
-              from last month
             </p>
           </CardContent>
         </Card>
         <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sales</CardTitle>
+            <CardTitle className="text-sm font-medium">Pending Deals</CardTitle>
             <div className="p-2 rounded-xl bg-primary/10 shadow-sm">
               <TrendingUp className="h-4 w-4 text-primary" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+12,234</div>
+            <div className="text-2xl font-bold">{pendingCustomers}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600 flex items-center">
+              <span className="text-yellow-600 flex items-center">
                 <ArrowUpRight className="h-3 w-3 mr-1" />
-                +19%
+                +{pendingCustomers} pending
               </span>
-              from last month
             </p>
           </CardContent>
         </Card>
         <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Deals</CardTitle>
+            <CardTitle className="text-sm font-medium">Inactive</CardTitle>
             <div className="p-2 rounded-xl bg-primary/10 shadow-sm">
               <Target className="h-4 w-4 text-primary" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+573</div>
+            <div className="text-2xl font-bold">{inactiveCustomers}</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-red-600 flex items-center">
                 <ArrowDownRight className="h-3 w-3 mr-1" />
-                -4.3%
+                {inactiveCustomers} inactive
               </span>
-              from last month
             </p>
           </CardContent>
         </Card>
@@ -113,63 +159,40 @@ export function DashboardContent() {
               Recent Customers
             </CardTitle>
             <CardDescription>
-              You have 265 customers this month.
+              You have {customers.length} customers total.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[
-                {
-                  name: "Sarah Johnson",
-                  email: "sarah.johnson@example.com",
-                  company: "TechCorp Inc.",
-                  value: "$12,000",
-                  status: "active",
-                  avatar: "/avatars/01.png"
-                },
-                {
-                  name: "Michael Chen",
-                  email: "michael.chen@example.com",
-                  company: "Global Solutions",
-                  value: "$8,500",
-                  status: "pending",
-                  avatar: "/avatars/02.png"
-                },
-                {
-                  name: "Emily Davis",
-                  email: "emily.davis@example.com",
-                  company: "Innovation Labs",
-                  value: "$15,200",
-                  status: "active",
-                  avatar: "/avatars/03.png"
-                },
-                {
-                  name: "David Wilson",
-                  email: "david.wilson@example.com",
-                  company: "Future Systems",
-                  value: "$6,800",
-                  status: "inactive",
-                  avatar: "/avatars/04.png"
-                }
-              ].map((customer, index) => (
-                <div key={index} className="flex items-center space-x-4 p-3 rounded-xl bg-background/50 shadow-sm hover:shadow-md transition-shadow">
-                  <Avatar className="shadow-sm">
-                    <AvatarImage src={customer.avatar} alt={customer.name} />
-                    <AvatarFallback className="bg-primary/10 text-primary">{customer.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium leading-none">{customer.name}</p>
-                    <p className="text-sm text-muted-foreground">{customer.email}</p>
-                    <p className="text-xs text-muted-foreground">{customer.company}</p>
+              {recentCustomers.length > 0 ? (
+                recentCustomers.map((customer) => (
+                  <div key={customer.id} className="flex items-center space-x-4 p-3 rounded-xl bg-background/50 shadow-sm hover:shadow-md transition-shadow">
+                    <Avatar className="shadow-sm">
+                      <AvatarImage src={customer.avatar} alt={customer.name} />
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {customer.name.split(' ').map(n => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium leading-none">{customer.name}</p>
+                      <p className="text-sm text-muted-foreground">{customer.email}</p>
+                      <p className="text-xs text-muted-foreground">{customer.company}</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant={customer.status === 'active' ? 'default' : customer.status === 'pending' ? 'secondary' : 'outline'} className="shadow-sm">
+                        {customer.status}
+                      </Badge>
+                      <span className="text-sm font-medium">${customer.value.toLocaleString()}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge variant={customer.status === 'active' ? 'default' : customer.status === 'pending' ? 'secondary' : 'outline'} className="shadow-sm">
-                      {customer.status}
-                    </Badge>
-                    <span className="text-sm font-medium">{customer.value}</span>
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No customers yet</p>
+                  <p className="text-sm">Add your first customer to get started</p>
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
@@ -181,39 +204,39 @@ export function DashboardContent() {
               <div className="p-2 rounded-xl bg-primary/10 shadow-sm">
                 <Activity className="h-4 w-4 text-primary" />
               </div>
-              Sales Overview
+              Customer Overview
             </CardTitle>
             <CardDescription>
-              Monthly sales performance
+              Customer status distribution
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">This Month</span>
-                  <span className="text-sm text-muted-foreground">$45,231</span>
+                  <span className="text-sm font-medium">Active</span>
+                  <span className="text-sm text-muted-foreground">{activeCustomers}</span>
                 </div>
                 <div className="p-2 rounded-xl bg-background/50 shadow-sm">
-                  <Progress value={75} className="h-2" />
+                  <Progress value={customers.length > 0 ? (activeCustomers / customers.length) * 100 : 0} className="h-2" />
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Last Month</span>
-                  <span className="text-sm text-muted-foreground">$38,450</span>
+                  <span className="text-sm font-medium">Pending</span>
+                  <span className="text-sm text-muted-foreground">{pendingCustomers}</span>
                 </div>
                 <div className="p-2 rounded-xl bg-background/50 shadow-sm">
-                  <Progress value={60} className="h-2" />
+                  <Progress value={customers.length > 0 ? (pendingCustomers / customers.length) * 100 : 0} className="h-2" />
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Target</span>
-                  <span className="text-sm text-muted-foreground">$50,000</span>
+                  <span className="text-sm font-medium">Inactive</span>
+                  <span className="text-sm text-muted-foreground">{inactiveCustomers}</span>
                 </div>
                 <div className="p-2 rounded-xl bg-background/50 shadow-sm">
-                  <Progress value={90} className="h-2" />
+                  <Progress value={customers.length > 0 ? (inactiveCustomers / customers.length) * 100 : 0} className="h-2" />
                 </div>
               </div>
             </div>
@@ -228,55 +251,30 @@ export function DashboardContent() {
             <div className="p-2 rounded-xl bg-primary/10 shadow-sm">
               <Activity className="h-4 w-4 text-primary" />
             </div>
-            Recent Activity
+            Quick Actions
           </CardTitle>
           <CardDescription>
-            Latest customer interactions and deals
+            Manage your customers and deals
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {[
-              {
-                type: "deal",
-                title: "New deal created",
-                description: "Sarah Johnson - TechCorp Inc. deal worth $12,000",
-                time: "2 hours ago",
-                icon: DollarSign
-              },
-              {
-                type: "call",
-                title: "Call scheduled",
-                description: "Follow-up call with Michael Chen",
-                time: "4 hours ago",
-                icon: Phone
-              },
-              {
-                type: "email",
-                title: "Email sent",
-                description: "Proposal sent to Emily Davis",
-                time: "6 hours ago",
-                icon: Mail
-              },
-              {
-                type: "meeting",
-                title: "Meeting completed",
-                description: "Quarterly review with David Wilson",
-                time: "1 day ago",
-                icon: Calendar
-              }
-            ].map((activity, index) => (
-              <div key={index} className="flex items-start space-x-4 p-3 rounded-xl bg-background/50 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shadow-sm">
-                  <activity.icon className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium leading-none">{activity.title}</p>
-                  <p className="text-sm text-muted-foreground">{activity.description}</p>
-                  <p className="text-xs text-muted-foreground">{activity.time}</p>
-                </div>
-              </div>
-            ))}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Button className="h-auto p-4 flex-col space-y-2" variant="outline">
+              <Users className="h-6 w-6" />
+              <span>Add Customer</span>
+            </Button>
+            <Button className="h-auto p-4 flex-col space-y-2" variant="outline">
+              <DollarSign className="h-6 w-6" />
+              <span>Create Deal</span>
+            </Button>
+            <Button className="h-auto p-4 flex-col space-y-2" variant="outline">
+              <Calendar className="h-6 w-6" />
+              <span>Schedule Meeting</span>
+            </Button>
+            <Button className="h-auto p-4 flex-col space-y-2" variant="outline">
+              <Mail className="h-6 w-6" />
+              <span>Send Email</span>
+            </Button>
           </div>
         </CardContent>
       </Card>

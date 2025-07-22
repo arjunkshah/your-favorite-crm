@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { 
   Sidebar, 
@@ -34,8 +35,33 @@ interface DashboardLayoutProps {
   children: React.ReactNode
 }
 
+interface User {
+  id: string
+  email: string
+}
+
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch('/api/me')
+        if (response.ok) {
+          const data = await response.json()
+          setUser(data.user)
+        }
+      } catch (error) {
+        console.error('Failed to fetch user:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchUser()
+  }, [])
 
   const handleLogout = async () => {
     try {
@@ -45,6 +71,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     } catch (error) {
       console.error('Logout failed:', error)
     }
+  }
+
+  const getUserInitials = (email: string) => {
+    return email.split('@')[0].substring(0, 2).toUpperCase()
   }
 
   return (
@@ -156,8 +186,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <LogOut className="h-4 w-4" />
               </Button>
               <Avatar className="shadow-sm hover:shadow-md transition-shadow">
-                <AvatarImage src="/avatars/01.png" alt="User" />
-                <AvatarFallback className="bg-primary/10 text-primary">JD</AvatarFallback>
+                <AvatarImage src="/avatars/01.png" alt={user?.email || "User"} />
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  {loading ? "..." : user ? getUserInitials(user.email) : "U"}
+                </AvatarFallback>
               </Avatar>
             </div>
           </header>

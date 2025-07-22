@@ -1,5 +1,3 @@
-import fs from 'fs'
-import path from 'path'
 import { randomUUID } from 'crypto'
 
 export interface User {
@@ -27,71 +25,97 @@ interface DB {
   customers: Record<string, Customer[]>
 }
 
-const dbPath = path.join(process.cwd(), 'data', 'db.json')
+// In-memory database for serverless environment
+const db: DB = { users: [], sessions: {}, customers: {} }
 
-function ensureDB(): DB {
-  if (!fs.existsSync(dbPath)) {
-    const init: DB = { users: [], sessions: {}, customers: {} }
-    fs.mkdirSync(path.dirname(dbPath), { recursive: true })
-    fs.writeFileSync(dbPath, JSON.stringify(init, null, 2))
-    return init
+// Initialize with some sample data for demo purposes
+if (db.users.length === 0) {
+  // Add a demo user
+  const demoUser: User = {
+    id: randomUUID(),
+    email: 'demo@example.com',
+    passwordHash: '$2a$10$demo.hash.for.testing.purposes.only'
   }
-  const raw = fs.readFileSync(dbPath, 'utf8')
-  return JSON.parse(raw)
-}
-
-function writeDB(db: DB) {
-  fs.writeFileSync(dbPath, JSON.stringify(db, null, 2))
+  db.users.push(demoUser)
+  
+  // Add some sample customers for the demo user
+  db.customers[demoUser.id] = [
+    {
+      id: randomUUID(),
+      name: "Sarah Johnson",
+      email: "sarah.johnson@example.com",
+      phone: "+1 (555) 123-4567",
+      company: "TechCorp Inc.",
+      website: "techcorp.com",
+      status: "active",
+      value: 12000,
+      lastContact: new Date().toISOString().split('T')[0],
+      avatar: "/avatars/01.png"
+    },
+    {
+      id: randomUUID(),
+      name: "Michael Chen",
+      email: "michael.chen@example.com",
+      phone: "+1 (555) 234-5678",
+      company: "Global Solutions",
+      website: "globalsolutions.com",
+      status: "pending",
+      value: 8500,
+      lastContact: new Date().toISOString().split('T')[0],
+      avatar: "/avatars/02.png"
+    },
+    {
+      id: randomUUID(),
+      name: "Emily Davis",
+      email: "emily.davis@example.com",
+      phone: "+1 (555) 345-6789",
+      company: "Innovation Labs",
+      website: "innovationlabs.com",
+      status: "active",
+      value: 15200,
+      lastContact: new Date().toISOString().split('T')[0],
+      avatar: "/avatars/03.png"
+    }
+  ]
 }
 
 export function createUser(email: string, passwordHash: string) {
-  const db = ensureDB()
   if (db.users.find(u => u.email === email)) {
     throw new Error('User already exists')
   }
   const user: User = { id: randomUUID(), email, passwordHash }
   db.users.push(user)
-  writeDB(db)
+  db.customers[user.id] = [] // Initialize empty customers array
   return user
 }
 
 export function findUserByEmail(email: string): User | undefined {
-  const db = ensureDB()
   return db.users.find(u => u.email === email)
 }
 
 export function findUserById(id: string): User | undefined {
-  const db = ensureDB()
   return db.users.find(u => u.id === id)
 }
 
 export function createSession(userId: string) {
-  const db = ensureDB()
   const token = randomUUID()
   db.sessions[token] = userId
-  writeDB(db)
   return token
 }
 
 export function getUserIdFromSession(token: string | undefined): string | undefined {
   if (!token) return undefined
-  const db = ensureDB()
   return db.sessions[token]
 }
 
 export function clearSession(token: string) {
-  const db = ensureDB()
   delete db.sessions[token]
-  writeDB(db)
 }
 
 export function getCustomers(userId: string): Customer[] {
-  const db = ensureDB()
   return db.customers[userId] ?? []
 }
 
 export function saveCustomers(userId: string, customers: Customer[]) {
-  const db = ensureDB()
   db.customers[userId] = customers
-  writeDB(db)
 }
