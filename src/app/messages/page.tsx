@@ -12,17 +12,27 @@ import {
   Search, 
   Send, 
   Plus, 
-  Edit, 
-  Trash2, 
   Reply,
   Forward,
-  Archive,
   Star,
   Clock,
   User,
   Phone,
   Building
 } from "lucide-react"
+
+interface Customer {
+  id: string
+  name: string
+  email: string
+  phone: string
+  company: string
+  website: string
+  status: 'active' | 'pending' | 'inactive'
+  value: number
+  lastContact: string
+  avatar?: string
+}
 
 interface Message {
   id: string
@@ -34,139 +44,133 @@ interface Message {
   status: 'read' | 'unread' | 'sent' | 'draft'
   priority: 'low' | 'medium' | 'high'
   category: 'inquiry' | 'support' | 'sales' | 'general'
-  attachments?: string[]
+  customerId: string
 }
 
 interface Conversation {
   id: string
-  customer: string
-  customerEmail: string
-  customerCompany: string
+  customer: Customer
+  messages: Message[]
   lastMessage: string
   lastMessageTime: string
   unreadCount: number
   status: 'active' | 'archived' | 'pending'
-  avatar?: string
 }
 
 export default function MessagesPage() {
-  const [messages, setMessages] = useState<Message[]>([])
+  const [customers, setCustomers] = useState<Customer[]>([])
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [newMessage, setNewMessage] = useState("")
-  const [isComposing, setIsComposing] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  // Initialize with sample data
+  // Load customers and create conversations
   useEffect(() => {
-    const sampleMessages: Message[] = [
-      {
-        id: "1",
-        from: "Sarah Johnson",
-        to: "sales@company.com",
-        subject: "Product Inquiry - TechCorp",
-        content: "Hi, I'm interested in learning more about your enterprise solution. Could you provide more details about pricing and features?",
-        timestamp: "2024-01-20T10:30:00",
-        status: "unread",
-        priority: "high",
-        category: "inquiry"
-      },
-      {
-        id: "2",
-        from: "Michael Chen",
-        to: "support@company.com",
-        subject: "Technical Support Request",
-        content: "We're experiencing issues with the API integration. Can you help us troubleshoot this?",
-        timestamp: "2024-01-20T09:15:00",
-        status: "read",
-        priority: "medium",
-        category: "support"
-      },
-      {
-        id: "3",
-        from: "Emily Davis",
-        to: "sales@company.com",
-        subject: "Contract Renewal Discussion",
-        content: "We'd like to discuss renewing our contract and potentially expanding our usage.",
-        timestamp: "2024-01-19T16:45:00",
-        status: "read",
-        priority: "high",
-        category: "sales"
+    const fetchCustomers = async () => {
+      try {
+        const response = await fetch('/api/customers')
+        if (response.ok) {
+          const customerData = await response.json()
+          setCustomers(customerData)
+          
+          // Create conversations from customers
+          const customerConversations: Conversation[] = customerData.map((customer: Customer) => ({
+            id: customer.id,
+            customer,
+            messages: [], // Start with empty messages
+            lastMessage: "Start a conversation",
+            lastMessageTime: new Date().toISOString(),
+            unreadCount: 0,
+            status: 'active' as const
+          }))
+          
+          setConversations(customerConversations)
+        }
+      } catch (error) {
+        console.error('Failed to fetch customers:', error)
+      } finally {
+        setLoading(false)
       }
-    ]
+    }
 
-    const sampleConversations: Conversation[] = [
-      {
-        id: "1",
-        customer: "Sarah Johnson",
-        customerEmail: "sarah.johnson@techcorp.com",
-        customerCompany: "TechCorp Inc.",
-        lastMessage: "Product Inquiry - TechCorp",
-        lastMessageTime: "2024-01-20T10:30:00",
-        unreadCount: 1,
-        status: "active",
-        avatar: "/avatars/01.png"
-      },
-      {
-        id: "2",
-        customer: "Michael Chen",
-        customerEmail: "michael.chen@globalsolutions.com",
-        customerCompany: "Global Solutions",
-        lastMessage: "Technical Support Request",
-        lastMessageTime: "2024-01-20T09:15:00",
-        unreadCount: 0,
-        status: "active",
-        avatar: "/avatars/02.png"
-      },
-      {
-        id: "3",
-        customer: "Emily Davis",
-        customerEmail: "emily.davis@innovationlabs.com",
-        customerCompany: "Innovation Labs",
-        lastMessage: "Contract Renewal Discussion",
-        lastMessageTime: "2024-01-19T16:45:00",
-        unreadCount: 0,
-        status: "active",
-        avatar: "/avatars/03.png"
-      }
-    ]
-
-    setMessages(sampleMessages)
-    setConversations(sampleConversations)
+    fetchCustomers()
   }, [])
 
   const filteredConversations = conversations.filter(conversation =>
-    conversation.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    conversation.customerCompany.toLowerCase().includes(searchTerm.toLowerCase())
+    conversation.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    conversation.customer.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    conversation.customer.email.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const selectedConversationData = conversations.find(c => c.id === selectedConversation)
-  const conversationMessages = messages.filter(m => 
-    m.from === selectedConversationData?.customer || m.to === selectedConversationData?.customer
-  )
 
   const sendMessage = () => {
-    if (!newMessage.trim() || !selectedConversation) return
+    if (!newMessage.trim() || !selectedConversation || !selectedConversationData) return
 
     const message: Message = {
       id: Date.now().toString(),
-      from: "sales@company.com",
-      to: selectedConversationData?.customerEmail || "",
-      subject: "Re: " + (conversationMessages[0]?.subject || "Message"),
+      from: "You",
+      to: selectedConversationData.customer.email,
+      subject: "Message from CRM",
       content: newMessage,
       timestamp: new Date().toISOString(),
       status: "sent",
       priority: "medium",
-      category: "general"
+      category: "general",
+      customerId: selectedConversation
     }
 
-    setMessages([...messages, message])
+    // Update conversation with new message
+    const updatedConversations = conversations.map(conv => {
+      if (conv.id === selectedConversation) {
+        return {
+          ...conv,
+          messages: [...conv.messages, message],
+          lastMessage: newMessage,
+          lastMessageTime: new Date().toISOString()
+        }
+      }
+      return conv
+    })
+
+    setConversations(updatedConversations)
     setNewMessage("")
   }
 
-  const markAsRead = (messageId: string) => {
-    setMessages(messages.map(m => 
-      m.id === messageId ? { ...m, status: "read" } : m
+  const addNewMessage = (customerId: string, content: string, from: string) => {
+    const message: Message = {
+      id: Date.now().toString(),
+      from,
+      to: from === "You" ? customers.find(c => c.id === customerId)?.email || "" : "You",
+      subject: "Customer Inquiry",
+      content,
+      timestamp: new Date().toISOString(),
+      status: from === "You" ? "sent" : "unread",
+      priority: "medium",
+      category: "inquiry",
+      customerId
+    }
+
+    const updatedConversations = conversations.map(conv => {
+      if (conv.id === customerId) {
+        return {
+          ...conv,
+          messages: [...conv.messages, message],
+          lastMessage: content,
+          lastMessageTime: new Date().toISOString(),
+          unreadCount: from === "You" ? conv.unreadCount : conv.unreadCount + 1
+        }
+      }
+      return conv
+    })
+
+    setConversations(updatedConversations)
+  }
+
+  const markAsRead = (conversationId: string) => {
+    setConversations(conversations.map(conv => 
+      conv.id === conversationId ? { ...conv, unreadCount: 0 } : conv
     ))
   }
 
@@ -197,6 +201,31 @@ export default function MessagesPage() {
   }
 
   const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0)
+  const totalMessages = conversations.reduce((sum, c) => sum + c.messages.length, 0)
+
+  // Add some sample messages to demonstrate functionality
+  useEffect(() => {
+    if (conversations.length > 0 && conversations[0].messages.length === 0) {
+      // Add a welcome message to the first conversation as an example
+      setTimeout(() => {
+        if (conversations[0]) {
+          addNewMessage(
+            conversations[0].id, 
+            "Hi! I'm interested in learning more about your services. Could you provide more information about pricing and features?",
+            conversations[0].customer.name
+          )
+        }
+      }, 1000)
+    }
+  }, [conversations.length])
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-6 space-y-6 w-full">
@@ -208,7 +237,7 @@ export default function MessagesPage() {
             <Mail className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{messages.length}</div>
+            <div className="text-2xl font-bold">{totalMessages}</div>
             <p className="text-xs text-muted-foreground">
               {totalUnread} unread messages
             </p>
@@ -232,21 +261,23 @@ export default function MessagesPage() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">94%</div>
+            <div className="text-2xl font-bold">
+              {conversations.length > 0 ? Math.round((conversations.filter(c => c.messages.length > 0).length / conversations.length) * 100) : 0}%
+            </div>
             <p className="text-xs text-muted-foreground">
-              Avg response time: 2.3h
+              Conversations with replies
             </p>
           </CardContent>
         </Card>
         <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">High Priority</CardTitle>
+            <CardTitle className="text-sm font-medium">Customers</CardTitle>
             <Star className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{messages.filter(m => m.priority === 'high').length}</div>
+            <div className="text-2xl font-bold">{customers.length}</div>
             <p className="text-xs text-muted-foreground">
-              Require immediate attention
+              Total customer contacts
             </p>
           </CardContent>
         </Card>
@@ -262,7 +293,18 @@ export default function MessagesPage() {
                 <Mail className="h-5 w-5 text-primary" />
                 Conversations
               </CardTitle>
-              <Button size="sm" onClick={() => setIsComposing(true)}>
+              <Button 
+                size="sm" 
+                onClick={() => {
+                  if (customers.length > 0) {
+                    addNewMessage(
+                      customers[0].id, 
+                      "New conversation started",
+                      "You"
+                    )
+                  }
+                }}
+              >
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
@@ -277,42 +319,53 @@ export default function MessagesPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {filteredConversations.map((conversation) => (
-                <div
-                  key={conversation.id}
-                  className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                    selectedConversation === conversation.id
-                      ? "bg-primary/10 border-primary"
-                      : "bg-background/50 hover:bg-background/70"
-                  } border`}
-                  onClick={() => setSelectedConversation(conversation.id)}
-                >
-                  <div className="flex items-center space-x-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={conversation.avatar} alt={conversation.customer} />
-                      <AvatarFallback>{conversation.customer.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <div className="font-medium truncate">{conversation.customer}</div>
-                        {conversation.unreadCount > 0 && (
-                          <Badge variant="default" className="text-xs">
-                            {conversation.unreadCount}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="text-sm text-muted-foreground truncate">
-                        {conversation.customerCompany}
-                      </div>
-                      <div className="text-xs text-muted-foreground truncate">
-                        {conversation.lastMessage}
+            {filteredConversations.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No conversations found</p>
+                <p className="text-sm">Add customers to start conversations</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredConversations.map((conversation) => (
+                  <div
+                    key={conversation.id}
+                    className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                      selectedConversation === conversation.id
+                        ? "bg-primary/10 border-primary"
+                        : "bg-background/50 hover:bg-background/70"
+                    } border`}
+                    onClick={() => {
+                      setSelectedConversation(conversation.id)
+                      markAsRead(conversation.id)
+                    }}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={conversation.customer.avatar} alt={conversation.customer.name} />
+                        <AvatarFallback>{conversation.customer.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium truncate">{conversation.customer.name}</div>
+                          {conversation.unreadCount > 0 && (
+                            <Badge variant="default" className="text-xs">
+                              {conversation.unreadCount}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-sm text-muted-foreground truncate">
+                          {conversation.customer.company}
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {conversation.lastMessage}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -321,11 +374,11 @@ export default function MessagesPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5 text-primary" />
-              {selectedConversationData ? selectedConversationData.customer : "Select a conversation"}
+              {selectedConversationData ? selectedConversationData.customer.name : "Select a conversation"}
             </CardTitle>
             {selectedConversationData && (
               <CardDescription>
-                {selectedConversationData.customerCompany} • {selectedConversationData.customerEmail}
+                {selectedConversationData.customer.company} • {selectedConversationData.customer.email}
               </CardDescription>
             )}
           </CardHeader>
@@ -334,41 +387,48 @@ export default function MessagesPage() {
               <div className="space-y-4">
                 {/* Messages */}
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {conversationMessages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`p-3 rounded-lg ${
-                        message.from === selectedConversationData.customer
-                          ? "bg-background/50 ml-4"
-                          : "bg-primary/10 mr-4"
-                      }`}
-                      onClick={() => markAsRead(message.id)}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            {getStatusIcon(message.status)}
-                            <span className="font-medium">{message.subject}</span>
-                            <Badge className={getPriorityColor(message.priority)}>
-                              {message.priority}
-                            </Badge>
+                  {selectedConversationData.messages.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No messages yet</p>
+                      <p className="text-sm">Start the conversation below</p>
+                    </div>
+                  ) : (
+                    selectedConversationData.messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`p-3 rounded-lg ${
+                          message.from === "You"
+                            ? "bg-primary/10 mr-4"
+                            : "bg-background/50 ml-4"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              {getStatusIcon(message.status)}
+                              <span className="font-medium">{message.from}</span>
+                              <Badge className={getPriorityColor(message.priority)}>
+                                {message.priority}
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-muted-foreground mb-2">
+                              {new Date(message.timestamp).toLocaleString()}
+                            </div>
+                            <div className="text-sm">{message.content}</div>
                           </div>
-                          <div className="text-sm text-muted-foreground mb-2">
-                            {new Date(message.timestamp).toLocaleString()}
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="sm">
+                              <Reply className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm">
+                              <Forward className="h-4 w-4" />
+                            </Button>
                           </div>
-                          <div className="text-sm">{message.content}</div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="sm">
-                            <Reply className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Forward className="h-4 w-4" />
-                          </Button>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
 
                 {/* Reply Box */}
@@ -397,58 +457,48 @@ export default function MessagesPage() {
         </Card>
       </div>
 
-      {/* Message Categories */}
+      {/* Customer Status Distribution */}
       <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5 text-primary" />
-            Message Categories
+            <User className="h-5 w-5 text-primary" />
+            Customer Communication Status
           </CardTitle>
           <CardDescription>
-            Overview of message types and priorities
+            Message activity by customer status
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
-            <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950">
-              <div className="flex items-center gap-2 mb-2">
-                <User className="h-4 w-4 text-blue-600" />
-                <span className="font-medium">Inquiries</span>
-              </div>
-              <div className="text-2xl font-bold text-blue-600">
-                {messages.filter(m => m.category === 'inquiry').length}
-              </div>
-              <div className="text-sm text-muted-foreground">Product questions</div>
-            </div>
+          <div className="grid gap-4 md:grid-cols-3">
             <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950">
               <div className="flex items-center gap-2 mb-2">
-                <Phone className="h-4 w-4 text-green-600" />
-                <span className="font-medium">Support</span>
+                <User className="h-4 w-4 text-green-600" />
+                <span className="font-medium">Active Customers</span>
               </div>
               <div className="text-2xl font-bold text-green-600">
-                {messages.filter(m => m.category === 'support').length}
+                {customers.filter(c => c.status === 'active').length}
               </div>
-              <div className="text-sm text-muted-foreground">Technical issues</div>
+              <div className="text-sm text-muted-foreground">Regular communication</div>
             </div>
-            <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-950">
+            <div className="p-4 rounded-lg bg-yellow-50 dark:bg-yellow-950">
               <div className="flex items-center gap-2 mb-2">
-                <Building className="h-4 w-4 text-purple-600" />
-                <span className="font-medium">Sales</span>
+                <Phone className="h-4 w-4 text-yellow-600" />
+                <span className="font-medium">Pending Customers</span>
               </div>
-              <div className="text-2xl font-bold text-purple-600">
-                {messages.filter(m => m.category === 'sales').length}
+              <div className="text-2xl font-bold text-yellow-600">
+                {customers.filter(c => c.status === 'pending').length}
               </div>
-              <div className="text-sm text-muted-foreground">Business opportunities</div>
+              <div className="text-sm text-muted-foreground">Awaiting response</div>
             </div>
-            <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-950">
+            <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950">
               <div className="flex items-center gap-2 mb-2">
-                <Mail className="h-4 w-4 text-gray-600" />
-                <span className="font-medium">General</span>
+                <Building className="h-4 w-4 text-red-600" />
+                <span className="font-medium">Inactive Customers</span>
               </div>
-              <div className="text-2xl font-bold text-gray-600">
-                {messages.filter(m => m.category === 'general').length}
+              <div className="text-2xl font-bold text-red-600">
+                {customers.filter(c => c.status === 'inactive').length}
               </div>
-              <div className="text-sm text-muted-foreground">Other messages</div>
+              <div className="text-sm text-muted-foreground">Need follow-up</div>
             </div>
           </div>
         </CardContent>

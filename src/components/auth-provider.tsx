@@ -20,9 +20,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const res = await fetch('/api/me')
         if (res.ok) {
           setIsAuthenticated(true)
+          // If authenticated and on auth pages, redirect to dashboard
+          if (pathname === '/login' || pathname === '/register' || pathname === '/') {
+            router.push('/dashboard')
+          }
         } else {
           setIsAuthenticated(false)
-          // Redirect to login if not on login/register pages
+          // Redirect to login if not on auth pages and not authenticated
           if (!pathname.includes('/login') && !pathname.includes('/register')) {
             router.push('/login')
           }
@@ -54,8 +58,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return null
   }
 
-  // If authenticated, show dashboard layout
-  if (isAuthenticated) {
+  // If authenticated and on protected routes, show dashboard layout
+  if (isAuthenticated && !pathname.includes('/login') && !pathname.includes('/register')) {
     return <DashboardLayout>{children}</DashboardLayout>
   }
 

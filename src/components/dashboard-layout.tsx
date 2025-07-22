@@ -15,7 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThemeToggle } from "@/components/theme-toggle"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { 
   Users, 
   BarChart3, 
@@ -42,21 +42,19 @@ interface User {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const response = await fetch('/api/me')
         if (response.ok) {
-          const data = await response.json()
-          setUser(data.user)
+          const userData = await response.json()
+          setUser(userData)
         }
       } catch (error) {
         console.error('Failed to fetch user:', error)
-      } finally {
-        setLoading(false)
       }
     }
 
@@ -65,140 +63,140 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/logout', { method: 'POST' })
+      await fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'include'
+      })
       router.push('/login')
-      router.refresh()
     } catch (error) {
       console.error('Logout failed:', error)
     }
   }
 
-  const getUserInitials = (email: string) => {
-    return email.split('@')[0].substring(0, 2).toUpperCase()
-  }
+  const sidebarItems = [
+    {
+      title: "Dashboard",
+      url: "/dashboard",
+      icon: Home,
+    },
+    {
+      title: "Customers",
+      url: "/customers",
+      icon: Users,
+    },
+    {
+      title: "Analytics",
+      url: "/analytics",
+      icon: TrendingUp,
+    },
+    {
+      title: "Calendar",
+      url: "/calendar",
+      icon: Calendar,
+    },
+    {
+      title: "Messages",
+      url: "/messages",
+      icon: Mail,
+    },
+    {
+      title: "Reports",
+      url: "/reports",
+      icon: FileText,
+    },
+    {
+      title: "Settings",
+      url: "/settings",
+      icon: Settings,
+    },
+  ]
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full bg-background">
-        <Sidebar collapsible="icon">
+      <div className="flex min-h-screen w-full">
+        <Sidebar>
           <SidebarHeader>
-            <div className="flex items-center gap-3 px-3 py-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg">
-                <TrendingUp className="h-5 w-5" />
+            <div className="flex items-center gap-2 px-4 py-2">
+              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                <BarChart3 className="size-4" />
               </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold">CRM Dashboard</span>
-                <span className="text-xs text-muted-foreground">v1.0.0</span>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-semibold">CRM Dashboard</span>
+                <span className="truncate text-xs">v1.0.0</span>
               </div>
             </div>
           </SidebarHeader>
           <SidebarContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/" className="hover:bg-sidebar-accent/50 transition-colors">
-                    <Home className="h-4 w-4" />
-                    <span>Dashboard</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/customers" className="hover:bg-sidebar-accent/50 transition-colors">
-                    <Users className="h-4 w-4" />
-                    <span>Customers</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/analytics" className="hover:bg-sidebar-accent/50 transition-colors">
-                    <BarChart3 className="h-4 w-4" />
-                    <span>Analytics</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/calendar" className="hover:bg-sidebar-accent/50 transition-colors">
-                    <Calendar className="h-4 w-4" />
-                    <span>Calendar</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/messages" className="hover:bg-sidebar-accent/50 transition-colors">
-                    <Mail className="h-4 w-4" />
-                    <span>Messages</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/reports" className="hover:bg-sidebar-accent/50 transition-colors">
-                    <FileText className="h-4 w-4" />
-                    <span>Reports</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/settings" className="hover:bg-sidebar-accent/50 transition-colors">
-                    <Settings className="h-4 w-4" />
-                    <span>Settings</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {sidebarItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={pathname === item.url}
+                  >
+                    <Link href={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Header with Claymorphic Styling */}
-          <header className="flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6 shadow-sm w-full">
-            <SidebarTrigger />
-            <div className="flex-1 min-w-0">
-              <div className="relative max-w-md">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <input
-                  type="search"
-                  placeholder="Search customers, deals..."
-                  className="w-full rounded-xl border border-input bg-background/50 pl-10 pr-4 py-2.5 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 shadow-sm hover:shadow-md transition-shadow"
-                />
+        
+        <div className="flex flex-1 flex-col">
+          {/* Header */}
+          <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex h-14 items-center px-4 gap-4">
+              <SidebarTrigger />
+              
+              <div className="flex flex-1 items-center gap-4">
+                <div className="relative hidden md:block flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type="search"
+                    placeholder="Search customers, deals..."
+                    className="w-full rounded-md border border-input bg-background px-10 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button size="sm" className="hidden md:flex">
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Deal
+                </Button>
+                
+                <Button variant="ghost" size="sm">
+                  <Bell className="h-4 w-4" />
+                </Button>
+                
+                <ThemeToggle />
+                
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src="" alt={user?.email || ''} />
+                    <AvatarFallback>
+                      {user?.email ? user.email.substring(0, 2).toUpperCase() : 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={handleLogout}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <Button variant="outline" size="sm" className="rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                <Plus className="h-4 w-4 mr-2" />
-                New Deal
-              </Button>
-              <Button variant="ghost" size="icon" className="rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                <Bell className="h-4 w-4" />
-              </Button>
-              <ThemeToggle />
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={handleLogout}
-                className="rounded-xl shadow-sm hover:shadow-md transition-shadow"
-                title="Logout"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
-              <Avatar className="shadow-sm hover:shadow-md transition-shadow">
-                <AvatarImage src="/avatars/01.png" alt={user?.email || "User"} />
-                <AvatarFallback className="bg-primary/10 text-primary">
-                  {loading ? "..." : user ? getUserInitials(user.email) : "U"}
-                </AvatarFallback>
-              </Avatar>
-            </div>
           </header>
-          
+
           {/* Main Content */}
-          <main className="flex-1 overflow-auto bg-gradient-to-br from-background to-background/80 w-full">
-            <div className="w-full h-full">
-              {children}
-            </div>
+          <main className="flex-1 overflow-auto">
+            {children}
           </main>
         </div>
       </div>

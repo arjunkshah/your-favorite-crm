@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -11,19 +10,29 @@ import {
   FileText, 
   Download, 
   Calendar, 
-  TrendingUp, 
-  TrendingDown,
+  TrendingUp,
   DollarSign,
   Users,
   Target,
   BarChart3,
-  PieChart,
-  LineChart,
   Filter,
   Eye,
   Share2,
   Clock
 } from "lucide-react"
+
+interface Customer {
+  id: string
+  name: string
+  email: string
+  phone: string
+  company: string
+  website: string
+  status: 'active' | 'pending' | 'inactive'
+  value: number
+  lastContact: string
+  avatar?: string
+}
 
 interface Report {
   id: string
@@ -64,76 +73,56 @@ interface ReportData {
 
 export default function ReportsPage() {
   const [reports, setReports] = useState<Report[]>([])
+  const [customers, setCustomers] = useState<Customer[]>([])
   const [selectedReportType, setSelectedReportType] = useState<string>("all")
-  const [reportData] = useState<ReportData>({
+  const [loading, setLoading] = useState(true)
+
+  // Load customers and calculate real report data
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const response = await fetch('/api/customers')
+        if (response.ok) {
+          const data = await response.json()
+          setCustomers(data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch customers:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCustomers()
+  }, [])
+
+  // Calculate real report data from customers
+  const reportData: ReportData = {
     sales: {
-      totalRevenue: 45231,
-      growth: 17.6,
-      deals: 573,
-      conversionRate: 72.3
+      totalRevenue: customers.reduce((sum, c) => sum + c.value, 0),
+      growth: 0, // Could calculate based on date if we had historical data
+      deals: customers.length,
+      conversionRate: customers.length > 0 ? (customers.filter(c => c.status === 'active').length / customers.length) * 100 : 0
     },
     customers: {
-      total: 2350,
-      new: 180,
-      churn: 12,
-      retention: 94.8
+      total: customers.length,
+      new: customers.filter(c => c.status === 'pending').length,
+      churn: customers.filter(c => c.status === 'inactive').length,
+      retention: customers.length > 0 ? ((customers.length - customers.filter(c => c.status === 'inactive').length) / customers.length) * 100 : 0
     },
     performance: {
-      avgDealSize: 12500,
-      salesCycle: 45,
-      winRate: 68.5,
-      responseTime: 2.3
+      avgDealSize: customers.length > 0 ? customers.reduce((sum, c) => sum + c.value, 0) / customers.length : 0,
+      salesCycle: 30, // Could calculate based on date fields if available
+      winRate: customers.length > 0 ? (customers.filter(c => c.status === 'active').length / customers.length) * 100 : 0,
+      responseTime: 2.3 // This would need tracking data
     },
     financial: {
-      revenue: 45231,
-      expenses: 28450,
-      profit: 16781,
-      margin: 37.1
+      revenue: customers.reduce((sum, c) => sum + c.value, 0),
+      expenses: customers.reduce((sum, c) => sum + c.value, 0) * 0.3, // Assume 30% costs
+      profit: customers.reduce((sum, c) => sum + c.value, 0) * 0.7, // 70% profit margin
+      margin: 70
     }
-  })
-
-  // Initialize with sample reports
-  useEffect(() => {
-    const sampleReports: Report[] = [
-      {
-        id: "1",
-        name: "Q4 Sales Report",
-        type: "sales",
-        status: "generated",
-        createdAt: "2024-01-15T10:00:00",
-        lastUpdated: "2024-01-20T14:30:00",
-        data: {}
-      },
-      {
-        id: "2",
-        name: "Customer Retention Analysis",
-        type: "customer",
-        status: "generated",
-        createdAt: "2024-01-18T09:00:00",
-        lastUpdated: "2024-01-19T16:45:00",
-        data: {}
-      },
-      {
-        id: "3",
-        name: "Performance Metrics Q4",
-        type: "performance",
-        status: "pending",
-        createdAt: "2024-01-20T11:00:00",
-        lastUpdated: "2024-01-20T11:00:00",
-        data: {}
-      },
-      {
-        id: "4",
-        name: "Financial Summary 2024",
-        type: "financial",
-        status: "generated",
-        createdAt: "2024-01-10T08:00:00",
-        lastUpdated: "2024-01-15T12:00:00",
-        data: {}
-      }
-    ]
-    setReports(sampleReports)
-  }, [])
+  }
 
   const filteredReports = reports.filter(report => 
     selectedReportType === "all" || report.type === selectedReportType
@@ -144,7 +133,7 @@ export default function ReportsPage() {
       id: Date.now().toString(),
       name: `${type.charAt(0).toUpperCase() + type.slice(1)} Report - ${new Date().toLocaleDateString()}`,
       type: type as 'sales' | 'customer' | 'performance' | 'financial',
-      status: "pending",
+      status: "generated",
       createdAt: new Date().toISOString(),
       lastUpdated: new Date().toISOString(),
       data: {}
@@ -153,8 +142,48 @@ export default function ReportsPage() {
   }
 
   const downloadReport = (reportId: string) => {
-    // Simulate download
-    console.log(`Downloading report ${reportId}`)
+    // Generate CSV content based on current data
+    const report = reports.find(r => r.id === reportId)
+    if (!report) return
+
+    let csvContent = ""
+    
+    switch (report.type) {
+      case 'sales':
+        csvContent = "Metric,Value\n"
+        csvContent += `Total Revenue,$${reportData.sales.totalRevenue}\n`
+        csvContent += `Total Deals,${reportData.sales.deals}\n`
+        csvContent += `Conversion Rate,${reportData.sales.conversionRate.toFixed(1)}%\n`
+        break
+      case 'customer':
+        csvContent = "Customer Name,Company,Email,Status,Value\n"
+        customers.forEach(customer => {
+          csvContent += `${customer.name},${customer.company},${customer.email},${customer.status},$${customer.value}\n`
+        })
+        break
+      case 'performance':
+        csvContent = "Metric,Value\n"
+        csvContent += `Average Deal Size,$${reportData.performance.avgDealSize.toFixed(2)}\n`
+        csvContent += `Win Rate,${reportData.performance.winRate.toFixed(1)}%\n`
+        csvContent += `Sales Cycle,${reportData.performance.salesCycle} days\n`
+        break
+      case 'financial':
+        csvContent = "Metric,Value\n"
+        csvContent += `Revenue,$${reportData.financial.revenue}\n`
+        csvContent += `Expenses,$${reportData.financial.expenses.toFixed(2)}\n`
+        csvContent += `Profit,$${reportData.financial.profit.toFixed(2)}\n`
+        csvContent += `Margin,${reportData.financial.margin}%\n`
+        break
+    }
+
+    // Download the CSV
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${report.name}.csv`
+    link.click()
+    window.URL.revokeObjectURL(url)
   }
 
   const getStatusColor = (status: string) => {
@@ -183,6 +212,14 @@ export default function ReportsPage() {
       default:
         return <FileText className="h-4 w-4" />
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    )
   }
 
   return (
@@ -245,7 +282,7 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {Math.round((reports.filter(r => r.status === 'generated').length / reports.length) * 100)}%
+              {reports.length > 0 ? Math.round((reports.filter(r => r.status === 'generated').length / reports.length) * 100) : 100}%
             </div>
             <p className="text-xs text-muted-foreground">
               Successfully generated
@@ -254,15 +291,13 @@ export default function ReportsPage() {
         </Card>
         <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
+            <CardTitle className="text-sm font-medium">Data Sources</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {reports.filter(r => r.status === 'pending').length}
-            </div>
+            <div className="text-2xl font-bold">{customers.length}</div>
             <p className="text-xs text-muted-foreground">
-              In progress
+              Customer records
             </p>
           </CardContent>
         </Card>
@@ -318,50 +353,56 @@ export default function ReportsPage() {
       </Card>
 
       {/* Reports List */}
-      <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
-            Recent Reports
-          </CardTitle>
-          <CardDescription>
-            View and manage your generated reports
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {filteredReports.map((report) => (
-              <div key={report.id} className="flex items-center justify-between p-4 rounded-lg bg-background/50 border">
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2">
-                    {getTypeIcon(report.type)}
-                    <div>
-                      <div className="font-medium">{report.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        Created: {new Date(report.createdAt).toLocaleDateString()}
+      {reports.length > 0 ? (
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              Generated Reports
+            </CardTitle>
+            <CardDescription>
+              View and download your generated reports
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {filteredReports.map((report) => (
+                <div key={report.id} className="flex items-center justify-between p-4 rounded-lg bg-background/50 border">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      {getTypeIcon(report.type)}
+                      <div>
+                        <div className="font-medium">{report.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Created: {new Date(report.createdAt).toLocaleDateString()}
+                        </div>
                       </div>
                     </div>
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge className={getStatusColor(report.status)}>
+                      {report.status}
+                    </Badge>
+                    <Button variant="ghost" size="sm" onClick={() => downloadReport(report.id)}>
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Badge className={getStatusColor(report.status)}>
-                    {report.status}
-                  </Badge>
-                  <Button variant="ghost" size="sm" onClick={() => downloadReport(report.id)}>
-                    <Download className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    <Share2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur-sm">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <FileText className="h-16 w-16 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Reports Generated</h3>
+            <p className="text-muted-foreground text-center max-w-md">
+              Generate your first report using the buttons above to start tracking your business metrics.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Data Overview */}
       <div className="grid gap-6 md:grid-cols-2">
@@ -380,10 +421,10 @@ export default function ReportsPage() {
                 <span className="text-sm font-medium">Total Revenue</span>
                 <span className="text-sm font-bold">${reportData.sales.totalRevenue.toLocaleString()}</span>
               </div>
-              <Progress value={reportData.sales.growth} className="h-2" />
+              <Progress value={Math.min(reportData.sales.conversionRate, 100)} className="h-2" />
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Growth: {reportData.sales.growth}%</span>
-                <span>{reportData.sales.deals} deals</span>
+                <span>Conversion: {reportData.sales.conversionRate.toFixed(1)}%</span>
+                <span>{reportData.sales.deals} customers</span>
               </div>
             </div>
           </CardContent>
@@ -404,10 +445,10 @@ export default function ReportsPage() {
                 <span className="text-sm font-medium">Total Customers</span>
                 <span className="text-sm font-bold">{reportData.customers.total.toLocaleString()}</span>
               </div>
-              <Progress value={reportData.customers.retention} className="h-2" />
+              <Progress value={Math.min(reportData.customers.retention, 100)} className="h-2" />
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Retention: {reportData.customers.retention}%</span>
-                <span>+{reportData.customers.new} new</span>
+                <span>Retention: {reportData.customers.retention.toFixed(1)}%</span>
+                <span>{reportData.customers.new} pending</span>
               </div>
             </div>
           </CardContent>
@@ -427,8 +468,8 @@ export default function ReportsPage() {
           <div className="grid gap-6 md:grid-cols-4">
             <div className="space-y-2">
               <div className="text-sm font-medium">Average Deal Size</div>
-              <div className="text-2xl font-bold">${reportData.performance.avgDealSize.toLocaleString()}</div>
-              <div className="text-xs text-muted-foreground">Per closed deal</div>
+              <div className="text-2xl font-bold">${Math.round(reportData.performance.avgDealSize).toLocaleString()}</div>
+              <div className="text-xs text-muted-foreground">Per customer</div>
             </div>
             <div className="space-y-2">
               <div className="text-sm font-medium">Sales Cycle</div>
@@ -437,13 +478,13 @@ export default function ReportsPage() {
             </div>
             <div className="space-y-2">
               <div className="text-sm font-medium">Win Rate</div>
-              <div className="text-2xl font-bold">{reportData.performance.winRate}%</div>
-              <div className="text-xs text-muted-foreground">Deals won vs total</div>
+              <div className="text-2xl font-bold">{reportData.performance.winRate.toFixed(1)}%</div>
+              <div className="text-xs text-muted-foreground">Active customers</div>
             </div>
             <div className="space-y-2">
-              <div className="text-sm font-medium">Response Time</div>
-              <div className="text-2xl font-bold">{reportData.performance.responseTime}h</div>
-              <div className="text-xs text-muted-foreground">Average response</div>
+              <div className="text-sm font-medium">Profit Margin</div>
+              <div className="text-2xl font-bold">{reportData.financial.margin}%</div>
+              <div className="text-xs text-muted-foreground">Revenue to profit</div>
             </div>
           </div>
         </CardContent>
