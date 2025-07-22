@@ -62,17 +62,17 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     fetchUser()
   }, [])
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/logout', {
-        method: 'POST',
-        credentials: 'include'
-      })
-      router.push('/login')
-    } catch (error) {
-      console.error('Logout failed:', error)
+      const handleLogout = async () => {
+      try {
+        await fetch('https://crm-qp4by219w-arjun-shahs-projects-cc47488b.vercel.app/api/logout', {
+          method: 'POST',
+          credentials: 'include'
+        })
+        router.push('/login')
+      } catch (error) {
+        console.error('Logout failed:', error)
+      }
     }
-  }
 
   const sidebarItems = [
     {

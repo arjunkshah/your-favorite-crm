@@ -98,8 +98,8 @@ export default function DealsPage() {
     const fetchData = async () => {
       try {
         const [dealsRes, customersRes] = await Promise.all([
-          fetch("/api/deals", { credentials: "include" }),
-          fetch("/api/customers", { credentials: "include" })
+          fetch("https://crm-qp4by219w-arjun-shahs-projects-cc47488b.vercel.app/api/deals", { credentials: "include" }),
+          fetch("https://crm-qp4by219w-arjun-shahs-projects-cc47488b.vercel.app/api/customers", { credentials: "include" })
         ])
         
         if (dealsRes.ok) {
@@ -138,7 +138,7 @@ export default function DealsPage() {
         customerCompany: selectedCustomer?.company || ''
       }
 
-      const res = await fetch("/api/deals", {
+      const res = await fetch("https://crm-qp4by219w-arjun-shahs-projects-cc47488b.vercel.app/api/deals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -172,7 +172,7 @@ export default function DealsPage() {
     if (!editingDeal) return
     
     try {
-      const res = await fetch(`/api/deals/${editingDeal.id}`, {
+      const res = await fetch(`https://crm-qp4by219w-arjun-shahs-projects-cc47488b.vercel.app/api/deals/${editingDeal.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -191,7 +191,7 @@ export default function DealsPage() {
 
   const deleteDeal = async (id: string) => {
     try {
-      const res = await fetch(`/api/deals/${id}`, {
+      const res = await fetch(`https://crm-qp4by219w-arjun-shahs-projects-cc47488b.vercel.app/api/deals/${id}`, {
         method: "DELETE",
         credentials: "include"
       })

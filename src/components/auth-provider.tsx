@@ -17,7 +17,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch('/api/me')
+        const res = await fetch('https://crm-qp4by219w-arjun-shahs-projects-cc47488b.vercel.app/api/me', {
+          credentials: 'include'
+        })
         if (res.ok) {
           setIsAuthenticated(true)
           // If authenticated and on auth pages, redirect to dashboard

@@ -27,7 +27,7 @@ export default function RegisterPage() {
     }
 
     try {
-      const res = await fetch('/api/register', {
+      const res = await fetch('https://crm-qp4by219w-arjun-shahs-projects-cc47488b.vercel.app/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

@@ -81,7 +81,7 @@ export default function ReportsPage() {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await fetch('/api/customers')
+        const response = await fetch('https://crm-qp4by219w-arjun-shahs-projects-cc47488b.vercel.app/api/customers', { credentials: 'include' })
         if (response.ok) {
           const data = await response.json()
           setCustomers(data)

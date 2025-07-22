@@ -72,7 +72,7 @@ export default function CustomersPage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/customers", {
+        const res = await fetch("https://crm-qp4by219w-arjun-shahs-projects-cc47488b.vercel.app/api/customers", {
           credentials: "include"
         })
         if (res.ok) {
@@ -96,7 +96,7 @@ export default function CustomersPage() {
 
   const addCustomer = async () => {
     try {
-      const res = await fetch("/api/customers", {
+      const res = await fetch("https://crm-qp4by219w-arjun-shahs-projects-cc47488b.vercel.app/api/customers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -124,7 +124,7 @@ export default function CustomersPage() {
   const updateCustomer = async () => {
     if (!editingCustomer) return
     try {
-      const res = await fetch(`/api/customers/${editingCustomer.id}`, {
+      const res = await fetch(`https://crm-qp4by219w-arjun-shahs-projects-cc47488b.vercel.app/api/customers/${editingCustomer.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -142,7 +142,7 @@ export default function CustomersPage() {
 
   const deleteCustomer = async (id: string) => {
     try {
-      const res = await fetch(`/api/customers/${id}`, {
+      const res = await fetch(`https://crm-qp4by219w-arjun-shahs-projects-cc47488b.vercel.app/api/customers/${id}`, {
         method: "DELETE",
         credentials: "include"
       })

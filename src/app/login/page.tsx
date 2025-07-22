@@ -20,7 +20,7 @@ export default function LoginPage() {
     setError('')
 
     try {
-      const res = await fetch('/api/login', {
+      const res = await fetch('https://crm-qp4by219w-arjun-shahs-projects-cc47488b.vercel.app/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

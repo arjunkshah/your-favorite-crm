@@ -64,7 +64,9 @@ export default function SettingsPage() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await fetch('/api/me')
+        const response = await fetch('https://crm-qp4by219w-arjun-shahs-projects-cc47488b.vercel.app/api/me', {
+          credentials: 'include'
+        })
         if (response.ok) {
           const userData = await response.json()
           
